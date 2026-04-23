@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  webserver:
+    container_name: webserver
+    image: docker.angie.software/angie:1.11.3-alpine@sha256:1dab21d9311c3a2d97e90276a69fe94218c3f3cf1bf9696ea0dbc093dd93fc44
+    depends_on:
+      - php-fpm
+    restart: unless-stopped
+    networks:
+      - test_api_products_network
+    volumes:
+      - source: ./application/public/
+        target: /application/public/
+        type: bind
+      - source: ./application/storage/
+        target: /application/storage/
+        type: bind
+      - source: ./deploy/angie/default_local.conf
+        target: /etc/angie/http.d/default.conf
+        type: bind
+    ports:
+      - target: 80
+        published: 8080
+        protocol: tcp
+        mode: host
+
+  php-fpm:
+    container_name: php-fpm
+    build:
+      context: .
+      dockerfile: ./deploy/dockerfiles/Dockerfile_local
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - test_api_products_network
+    volumes:
+      - source: ./application
+        target: /application
+        type: bind
+      - source: ./deploy/php-fpm/php-ini-overrides_local.ini
+        target: /etc/php/8.4/fpm/conf.d/99-overrides.ini
+        type: bind
+
+  postgres:
+    container_name: postgres
+    image: postgres:17.7-alpine3.21@sha256:5bcb5623bb6999b2f7fbd2109f0bfc1f144d138b52ca35ede95d644d93585c2f
+    restart: unless-stopped
+    networks:
+      - test_api_products_network
+    volumes:
+      - source: test_api_products_postgres_data
+        target: /var/lib/postgresql/data
+        type: volume
+    environment:
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_DB=test
+    ports:
+      - target: 5432
+        published: 5432
+        protocol: tcp
+        mode: host
+
+  pgadmin:
+    container_name: pgadmin
+    image: dockerhub.timeweb.cloud/dpage/pgadmin4:8.14@sha256:8a68677a97b8c8d1427dc915672a26d2c4a04376916a68256f53d669d6171be7
+    depends_on:
+      - postgres
+    environment:
+      PGADMIN_DISABLE_POSTFIX: "yes"
+      PGADMIN_DEFAULT_EMAIL: admin@admin.ru
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - source: test_api_products_pgadmin_data
+        target: /var/lib/pgadmin
+        type: volume
+    networks:
+      - test_api_products_network
+    ports:
+      - target: 80
+        published: 8081
+        protocol: tcp
+        mode: host
+
+volumes:
+  test_api_products_postgres_data:
+    name: test_api_products_postgres_data
+    driver: local
+  test_api_products_pgadmin_data:
+    name: test_api_products_pgadmin_data
+    driver: local
+
+networks:
+  test_api_products_network:
+    name: test_api_products_network
+    driver: bridge

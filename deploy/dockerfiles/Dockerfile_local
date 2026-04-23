@@ -1,0 +1,24 @@
+FROM phpdockerio/php:8.4-fpm@sha256:1353936c205062a511e8d87d560e6a7038e11a321efaba52e83f80a146576e3e
+
+RUN apt update \
+    && apt install -y --no-install-recommends  \
+    php8.4-pgsql \
+    php8.4-cli \
+    php8.4-curl \
+    php8.4-mbstring \
+    php8.4-xml \
+    php8.4-xmlreader \
+    php8.4-zip \
+    php8.4-gd \
+    nano
+
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash \
+    && apt-get install -y nodejs \
+    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+RUN mkdir -p /opt/laravel_setup
+COPY ./deploy/laravel/entrypoint_local.sh /opt/laravel_setup/
+COPY ./deploy/laravel/.env_local /opt/laravel_setup/
+RUN chmod +x /opt/laravel_setup/entrypoint_local.sh
+
+ENTRYPOINT ["/opt/laravel_setup/entrypoint_local.sh"]
