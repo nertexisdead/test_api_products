@@ -1,0 +1,221 @@
+openapi: 3.0.3
+
+info:
+  title: Test api products
+  description: Описание API для работы
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Локальный сервер разработки с api версии v1
+
+tags:
+  - name: products
+    description: Описание методов работы с товарами
+
+paths:
+  /products:
+    get:
+      tags:
+        - products
+      summary: Возвращает список товаров
+      operationId: products
+      parameters:
+        - name: filters[q]
+          in: query
+          description: Поиск по названию товара
+          schema:
+            type: string
+        - name: filters[price_from]
+          in: query
+          description: Минимальная цена
+          schema:
+            type: number
+            format: float
+        - name: filters[price_to]
+          in: query
+          description: Максимальная цена
+          schema:
+            type: number
+            format: float
+        - name: filters[category_id]
+          in: query
+          description: Фильтр по категории
+          schema:
+            type: integer
+        - name: filters[in_stock]
+          in: query
+          description: Только товары в наличии
+          schema:
+            type: boolean
+        - name: filters[rating_from]
+          in: query
+          description: Минимальный рейтинг
+          schema:
+            type: number
+            format: float
+        - name: orders[price]
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+        - name: orders[rating]
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+        - name: orders[created_at]
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+        - name: page
+          in: query
+          description: Страница в фильтрации
+          schema:
+            type: integer
+            example: 1
+        - name: perPage
+          in: query
+          description: Количество элементов на одной странице
+          schema:
+            type: integer
+            example: 20
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  results:
+                    nullable: true
+                    type: object
+                    properties:
+                      products:
+                        $ref: '#/components/schemas/Products'
+                      filters:
+                        $ref: '#/components/schemas/ProductsFilters'
+                      orders:
+                        type: object
+                        additionalProperties:
+                          type: string
+                          enum: [ asc, desc ]
+                        example:
+                          price: desc
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+                  errors:
+                    $ref: '#/components/schemas/Errors'
+
+components:
+  schemas:
+    ErrorsTypes:
+      type: string
+      enum:
+        - NOT_FOUND
+        - INVALID
+        - INTERNAL_SERVER_ERROR
+    Error:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/ErrorsTypes'
+        message:
+          type: string
+          example: Внутренняя ошибка сервера
+    Errors:
+      nullable: true
+      type: array
+      items:
+        $ref: '#/components/schemas/Error'
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 2
+        itemsCount:
+          type: integer
+          example: 100
+        pages:
+          type: integer
+          example: 5
+        perPage:
+          type: integer
+          example: 20
+        pageItemsCount:
+          type: integer
+          example: 20
+        next:
+          type: integer
+          nullable: true
+          example: 3
+        prev:
+          type: integer
+          nullable: true
+          example: 1
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        alias:
+          type: string
+        name:
+          type: string
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        category:
+          $ref: '#/components/schemas/Category'
+        name:
+          type: string
+          example: iPhone 15
+        price:
+          type: number
+          format: float
+        in_stock:
+          type: boolean
+        rating:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Products:
+      type: array
+      items:
+        $ref: '#/components/schemas/Product'
+    ProductsFilters:
+      type: object
+      properties:
+        q:
+          type: string
+        price_from:
+          type: number
+          format: float
+          nullable: true
+        price_to:
+          type: number
+          format: float
+          nullable: true
+        category_id:
+          type: integer
+          nullable: true
+        in_stock:
+          type: boolean
+          nullable: true
+        rating_from:
+          type: number
+          format: float
+          nullable: true
